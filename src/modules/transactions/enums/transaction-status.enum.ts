@@ -1,0 +1,9 @@
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  PAID = 'PAID',
+  CONFIRMED = 'CONFIRMED',
+  RELEASED = 'RELEASED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}
