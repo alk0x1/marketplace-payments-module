@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  PAID
+  CONFIRMED
+  RELEASED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  BOLETO
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum RecipientType {
+  PLATFORM
+  PROVIDER
+}
+
+enum SplitStatus {
+  PENDING
+  RELEASED
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  clientId      String
+  providerId    String
+  serviceId     String
+  amount        Decimal           @db.Decimal(10, 2)
+  platformFee   Decimal           @db.Decimal(10, 2)
+  totalAmount   Decimal           @db.Decimal(10, 2)
+  netAmount     Decimal           @db.Decimal(10, 2)
+  status        TransactionStatus @default(PENDING)
+  paymentMethod PaymentMethod
+  iuguInvoiceId String?
+  paidAt        DateTime?
+  confirmedAt   DateTime?
+  releasedAt    DateTime?
+  autoConfirmAt DateTime
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  payments Payment[]
+  splits   Split[]
+
+  @@index([clientId])
+  @@index([providerId])
+  @@index([status])
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  transactionId String
+  iuguPaymentId String?
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  amount        Decimal       @db.Decimal(10, 2)
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@index([transactionId])
+}
+
+model Split {
+  id            String        @id @default(uuid())
+  transactionId String
+  recipientType RecipientType
+  amount        Decimal       @db.Decimal(10, 2)
+  status        SplitStatus   @default(PENDING)
+  releasedAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@index([transactionId])
+}
+
+model WebhookEvent {
+  id          String        @id @default(uuid())
+  eventType   String
+  payload     Json
+  status      WebhookStatus @default(RECEIVED)
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime      @default(now())
+
+  @@index([eventType])
+  @@index([status])
+}
